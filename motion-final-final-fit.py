@@ -111,15 +111,15 @@ for file in filenames:
         #Threshold values
         t_x=200
         t_y=100
-        altitude=80000 #80 meters high
+        altitude=300 #80 meters high = 80000 mm
         if p>t_x and q>t_y:
-            m=np.array([p,q+50,(altitude-20000)*focal_length_pixel/focal_length_mm])
+            m=np.array([p,q+50,altitude*focal_length_pixel/focal_length_mm])
             n=np.array([p+100,q+100,altitude*focal_length_pixel/focal_length_mm])
-            l=np.array([p-100,q+150,altitude*focal_length_pixel/focal_length_mm])
+            l=np.array([p-100,img_height,altitude*focal_length_pixel/focal_length_mm])
         else:
-            m=np.array([p+t_x,q+t_y+50,(altitude-20000)*focal_length_pixel/focal_length_mm])
+            m=np.array([p+t_x,q+t_y+50,altitude*focal_length_pixel/focal_length_mm])
             n=np.array([p+t_x+100,q+t_y+100,altitude*focal_length_pixel/focal_length_mm])
-            l=np.array([p+t_x-100,q+t_y+150,altitude*focal_length_pixel/focal_length_mm])
+            l=np.array([p+t_x-100,img_height,altitude*focal_length_pixel/focal_length_mm])
 
         center1,vec1=estimate_plane(m, n, l)
         #print(center1,vec1,'\n')
@@ -177,15 +177,15 @@ for file in filenames:
         #Threshold values
         t_x=200
         t_y=100
-        altitude=80000 #80 meters high
+        altitude=300 #80 meters high = 80000 mm
         if p>t_x and q>t_y:
             m=np.array([p,q+50,altitude*focal_length_pixel/focal_length_mm])
             n=np.array([p+100,q+100,altitude*focal_length_pixel/focal_length_mm])
-            l=np.array([p-100,q+150,altitude*focal_length_pixel/focal_length_mm])
+            l=np.array([p-100,img_height,altitude*focal_length_pixel/focal_length_mm])
         else:
             m=np.array([p+t_x,q+t_y+50,altitude*focal_length_pixel/focal_length_mm])
             n=np.array([p+t_x+100,q+t_y+100,altitude*focal_length_pixel/focal_length_mm])
-            l=np.array([p+t_x-100,q+t_y+150,altitude*focal_length_pixel/focal_length_mm])
+            l=np.array([p+t_x-100,img_height,altitude*focal_length_pixel/focal_length_mm])
 
         center2,vec2=estimate_plane(m, n, l)
         rotation_matrix=rotation_matrix_from_vectors(vec2, vec1)
@@ -279,15 +279,15 @@ for file in filenames:
         #Threshold values
         t_x=200
         t_y=100
-        altitude=80000 #80 meters high
+        altitude=300 #80 meters high = 80000 mm
         if p>t_x and q>t_y:
             m=np.array([p,q+50,altitude*focal_length_pixel/focal_length_mm])
             n=np.array([p+100,q+100,altitude*focal_length_pixel/focal_length_mm])
-            l=np.array([p-100,q+150,altitude*focal_length_pixel/focal_length_mm])
+            l=np.array([p-100,img_height,(altitude-0.4)*focal_length_pixel/focal_length_mm])
         else:
             m=np.array([p+t_x,q+t_y+50,altitude*focal_length_pixel/focal_length_mm])
             n=np.array([p+t_x+100,q+t_y+100,altitude*focal_length_pixel/focal_length_mm])
-            l=np.array([p+t_x-100,q+t_y+150,altitude*focal_length_pixel/focal_length_mm])
+            l=np.array([p+t_x-100,img_height,(altitude-0.4)*focal_length_pixel/focal_length_mm])
 
         center3,vec3=estimate_plane(m, n, l)
         #print(center3,vec3,'\n')
