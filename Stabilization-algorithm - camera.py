@@ -79,11 +79,9 @@ while True:
     ret, frame = cam.read()
     #frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY) 
     cv.imshow('Cam',frame)
-    if cv.waitKey(1)==ord('q'):
+    if cv.waitKey(1) == ord('q'):
         break
 
-
-    ts=time.time()
     image_counter +=1
     if image_counter == 1:
         img = frame
@@ -174,86 +172,82 @@ while True:
             n=np.array([p + 100, q + 100, altitude * focal_length_pixel / focal_length_mm])
             l=np.array([p - 100, img_height, altitude * focal_length_pixel / focal_length_mm])
         else:
-            m=np.array([p+t_x,q+t_y+50,altitude*focal_length_pixel/focal_length_mm])
-            n=np.array([p+t_x+100,q+t_y+100,altitude*focal_length_pixel/focal_length_mm])
-            l=np.array([p+t_x-100,img_height,altitude*focal_length_pixel/focal_length_mm])
+            m = np.array([p + t_x, q + t_y + 50, altitude * focal_length_pixel / focal_length_mm])
+            n = np.array([p + t_x + 100, q + t_y + 100, altitude * focal_length_pixel / focal_length_mm])
+            l = np.array([p + t_x - 100, img_height, altitude * focal_length_pixel / focal_length_mm])
 
-        center2,vec2=estimate_plane(m, n, l)
-        rotation_matrix=rotation_matrix_from_vectors(vec2, vec1)
+        center2,vec2 = estimate_plane(m, n, l)
+        rotation_matrix = rotation_matrix_from_vectors(vec2, vec1)
         #Plane Results
-        theta_x=np.arctan2(rotation_matrix[2,1],rotation_matrix[2,2])
+        theta_x = np.arctan2(rotation_matrix[2,1], rotation_matrix[2,2])
         print('Theta x rad: ',theta_x)
-        theta_y=np.arctan2(-rotation_matrix[2,0],np.sqrt((rotation_matrix[2,1])**2+(rotation_matrix[2,2])**2))
+        theta_y = np.arctan2(-rotation_matrix[2,0], np.sqrt((rotation_matrix[2,1]) ** 2 + (rotation_matrix[2,2]) ** 2))
         print('Theta y rad: ',theta_y)
-        theta_z=np.arctan2(rotation_matrix[1,0],rotation_matrix[0,0])
+        theta_z = np.arctan2(rotation_matrix[1,0], rotation_matrix[0,0])
         print('Theta z rad: ',theta_z,'\n')
 
 
     elif image_counter > 2:
         img = frame
         img = boundary_removal(img) 
-        theta_pred=theta_inc+last_angle
-        b_pred=last_b+b_inc
-        a_p=np.tan(theta_pred)
-        b_p=b_pred
-        last_last_angle=last_angle
-        last_last_b=last_b
+        theta_pred = theta_inc + last_angle
+        b_pred = last_b + b_inc
+        a_p = np.tan(theta_pred)
+        b_p = b_pred
+        last_last_angle = last_angle
+        last_last_b = last_b
 
-        x_position_predict = [i for i in range(0,len(img[0,:]),5)]
-        y_position_predict =[]
+        x_position_predict = [i for i in range(0, len(img[0,:]), 5)]
+        y_position_predict = []
         for x in x_position_predict:
-            y=a_p*x +b_p
+            y = a_p * x + b_p
             y_position_predict.append(y)
 
         x_position = x_position_predict 
         y_position = []
-        for i,j in zip(x_position,y_position_predict):
+        for i,j in zip(x_position, y_position_predict):
             j=int(j)
             if img[j,i] == 0: 
                 while (img[j,i] == 0):              
-                    j -=1 
+                    j -= 1 
                 y_position.append(j)
             else:
                 while (img[j,i] == 127):              
-                    j +=1 
+                    j += 1 
                 y_position.append(j)
 
         a, b = fit(x_position, y_position)
         x_line = np.arange(min(x_position), max(x_position), 1)
-        y_line=a*x_line +b
-        angle_a=np.arctan(a)
-        last_angle=angle_a
-        last_b=b
-        theta_inc=last_angle-last_last_angle
-        b_inc=last_b-last_last_b
+        y_line = a * x_line + b
+        angle_a = np.arctan(a)
+        last_angle = angle_a
+        last_b = b
+        theta_inc = last_angle - last_last_angle
+        b_inc = last_b - last_last_b
 
 
         #Compensate Movement
-        angle_mov=angle_a
-        angle_compensate_rad=angle_mov-reference_angle
-        print("Roll angle rad:",angle_compensate_rad,'\n')
+        angle_mov = angle_a
+        angle_compensate_rad = angle_mov - reference_angle
+        print("Roll angle rad:", angle_compensate_rad, '\n')
 
-        b_mov=b
-        b_compensate=b_mov-reference_b
-
-        b_half=reference_b-img_height/2 #img_height/2=540 half height size resolution
-        b_half_angle=np.arctan(b_half/focal_length_pixel) #focal_length_pixel=516 pixels focal lenght Raspberry Pi camera V2 (using calibation)
-        b_total=b_half+b_compensate
-        b_total_angle=np.arctan(b_total/focal_length_pixel)
-        pitch_angle_rad=np.arctan(b_total_angle-b_half_angle)
-        pitch_angle_degrees=np.rad2deg(pitch_angle_rad)
+        b_mov = b
+        b_compensate = b_mov - reference_b
+        b_half = reference_b - img_height / 2 #img_height/2=540 half height size resolution
+        b_half_angle = np.arctan(b_half / focal_length_pixel) #focal_length_pixel=516 pixels focal lenght Raspberry Pi camera V2 (using calibation)
+        b_total = b_half + b_compensate
+        b_total_angle = np.arctan(b_total / focal_length_pixel)
+        pitch_angle_rad = np.arctan(b_total_angle - b_half_angle)
         print("Pitch angle rad:",pitch_angle_rad,'\n')
-        #print("Pitch angle degrees:",pitch_angle_degrees,'\n')
         
-
         #Plane3
-        p=x_position[int(len(x_position)/2)]
-        q=y_position[int(len(y_position)/2)]
+        p = x_position[int(len(x_position) / 2)]
+        q = y_position[int(len(y_position) / 2)]
         #Threshold values
-        t_x=200
-        t_y=100
-        altitude=300 #80 meters high = 80000 mm
-        if p>t_x and q>t_y:
+        t_x = 200
+        t_y = 100
+        altitude = 300 #80 meters high = 80000 mm
+        if p > t_x and q > t_y:
             m=np.array([p,q+50,altitude*focal_length_pixel/focal_length_mm])
             n=np.array([p+100,q+100,altitude*focal_length_pixel/focal_length_mm])
             l=np.array([p-100,img_height,(altitude-0.4)*focal_length_pixel/focal_length_mm])
@@ -273,8 +267,5 @@ while True:
         theta_z=np.arctan2(rotation_matrix[1,0],rotation_matrix[0,0])
         print('Theta z rad: ',theta_z,'\n')
 
-
-        te=time.time()
-        print('--- %s seconds ---'%(te-ts),'\n')
 cam.release()
 cv.destroyAllWindows()
