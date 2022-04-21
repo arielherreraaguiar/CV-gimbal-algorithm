@@ -6,7 +6,7 @@ import sympy as sp
 
 
 def fit(x, y): 
-    """Curve Fitting Straight line. Returns the slope of the line a and the y-intercept b"""
+    """Curve Fitting Straight line. Return the slope of the line a and the y-intercept b"""
     xbar = sum(x) / len(x)
     ybar = sum(y) / len(y)
     n = len(x) # or len(y)
@@ -40,7 +40,7 @@ def boundary_removal(img):
 
 def estimate_plane(a, b, c):
     """Estimate the parameters of the plane passing by three points.
-    Returns:center(float): The center point of the three input points.
+    Return:center(float): The center point of the three input points.
     normal(float): The normal to the plane."""
     center = (a + b + c) / 3
     normal = np.cross(b - a, c - a)
@@ -62,7 +62,7 @@ def rotation_matrix_from_vectors(vec1, vec2):
     """ Find the rotation matrix that aligns vec1 to vec2
     vec1: A 3d "source" vector
     vec2: A 3d "destination" vector
-    Returns: A transform matrix (3x3)
+    Return: A transform matrix (3x3)
     """
     a, b = (vec1 / np.linalg.norm(vec1)).reshape(3), (vec2 / np.linalg.norm(vec2)).reshape(3)
     v = np.cross(a, b)
