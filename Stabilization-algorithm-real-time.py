@@ -2,7 +2,7 @@
 
 import numpy as np
 import cv2 as cv
-from matplotlib import pyplot as plt
+import sympy as sp
 
 
 def fit(x, y): 
@@ -15,6 +15,16 @@ def fit(x, y):
     a = numer / denum
     b = ybar - a * xbar
     return a, b
+
+
+def distance(x, y): 
+    """Straight line distance between two points"""
+    x1 = x[0]
+    x2 = x[-1]
+    y1 = y[0]
+    y2 = y[-1]
+    d = np.sqrt(((x2-x1) ** 2) + ((y2-y1) ** 2))
+    return d
 
 
 def boundary_removal(img): 
@@ -38,11 +48,21 @@ def estimate_plane(a, b, c):
     return center, normal
 
 
+def plane_area(plane_coordinates):
+    """Estimate the area of the plane given its coordinates (array)."""
+    a = 0
+    ox,oy = plane_coordinates[0]
+    for x,y in plane_coordinates[1:]:
+        a += (x*oy-y*ox)
+        ox,oy = x,y
+    return a/2
+
+
 def rotation_matrix_from_vectors(vec1, vec2):
     """ Find the rotation matrix that aligns vec1 to vec2
-    :param vec1: A 3d "source" vector
-    :param vec2: A 3d "destination" vector
-    :return mat: A transform matrix (3x3) which when applied to vec1, aligns it with vec2.
+    vec1: A 3d "source" vector
+    vec2: A 3d "destination" vector
+    Returns: A transform matrix (3x3)
     """
     a, b = (vec1 / np.linalg.norm(vec1)).reshape(3), (vec2 / np.linalg.norm(vec2)).reshape(3)
     v = np.cross(a, b)
@@ -51,6 +71,7 @@ def rotation_matrix_from_vectors(vec1, vec2):
     kmat = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
     rotation_matrix = np.eye(3) + kmat + kmat.dot(kmat) * ((1 - c) / (s ** 2))
     return rotation_matrix
+
 
 #Raspberry Pi camera parameters
 dispW = 960
@@ -107,6 +128,16 @@ while True:
         reference_angle = angle_a #radians
         reference_b = b #pixels
 
+        #Reference Sky line Distance
+        d_ref = distance(x_position, y_position) #pixels
+
+        #Reference Area below the sky line
+        x_line = np.arange(x_position[0], x_position[-1], 1)
+        y_line = a * x_line + b
+        area_integral = sp.integrate(y_line, (x_line, x_position[0], x_position[-1])) #pixels^2
+        area_total = img_height * (x_position[-1] - x_position[0]) #pixels^2
+        area_ref = area_total - area_integral #pixels^2
+
         #Plane 1 Reference Values
         # (p,q) = Center Straight Line Coordinates
         p = x_position[int(len(x_position) / 2)] #pixels
@@ -115,6 +146,7 @@ while True:
         t_x = 200 #pixels
         t_y = 100 #pixels
         altitude = 300 #milimeters
+        # m, n, l = Coordinates of three points in a reference plane
         if p > t_x and q > t_y:
             m = np.array([p, q + 50, altitude * focal_length_pixel / focal_length_mm]) #pixels
             n = np.array([p + 100, q + 100, altitude * focal_length_pixel / focal_length_mm]) #pixels
@@ -123,8 +155,8 @@ while True:
             m = np.array([p + t_x, q + t_y + 50, altitude * focal_length_pixel / focal_length_mm]) #pixels
             n = np.array([p + t_x + 100, q + t_y + 100, altitude * focal_length_pixel / focal_length_mm]) #pixels
             l = np.array([p + t_x - 100, img_height, altitude * focal_length_pixel / focal_length_mm]) #pixels
-        # m, n, l = Coordinates of three points in a plane
-        center1,vec1 = estimate_plane(m, n, l)
+        #Estimate reference plane center and reference plane normal vector
+        center_ref, vec_ref = estimate_plane(m, n, l)
 
         
     elif image_counter == 2:
@@ -141,7 +173,7 @@ while True:
                     break
         #a = Current Slope
         #b = Current y-intercept
-        a, b = fit(x_position, y_position)
+        a, b = fit(x_position, y_position)   
         angle_a = np.arctan(a) #radians
         last_angle = angle_a #radians
         last_b = b #pixels
@@ -167,8 +199,6 @@ while True:
         b_total_angle = np.arctan(b_total / focal_length_pixel) #radians
         #Pitch angle compensation movement
         pitch_angle_compensate = np.arctan(b_total_angle - b_center_ref_angle) #radians
-        
-        print("Roll and Pitch angles [rad]:", roll_angle_compensate, pitch_angle_compensate,'\n')
 
         #Plane 2 Values
         # (p,q) = Current Center Straight Line Coordinates
@@ -178,6 +208,7 @@ while True:
         t_x = 200 #pixels
         t_y = 100 #pixels
         altitude = 300 ##milimeters
+        # m, n, l = Coordinates of three points in a current plane
         if p > t_x and q > t_y:
             m = np.array([p, q + 50, altitude * focal_length_pixel / focal_length_mm]) #pixels
             n = np.array([p + 100, q + 100, altitude * focal_length_pixel / focal_length_mm]) #pixels
@@ -186,16 +217,16 @@ while True:
             m = np.array([p + t_x, q + t_y + 50, altitude * focal_length_pixel / focal_length_mm]) #pixels
             n = np.array([p + t_x + 100, q + t_y + 100, altitude * focal_length_pixel / focal_length_mm]) #pixels
             l = np.array([p + t_x - 100, img_height, altitude * focal_length_pixel / focal_length_mm]) #pixels
-        # m, n, l = Coordinates of three points in a current plane to estimate its center and its normal vector
-        center2,vec2 = estimate_plane(m, n, l)
-        
+        #Estimate plane center and plane normal vector
+        center_current, vec_current = estimate_plane(m, n, l)
         #Rotation Matrix between the current plane and the reference plane
-        rotation_matrix = rotation_matrix_from_vectors(vec2, vec1)
+        rotation_matrix = rotation_matrix_from_vectors(vec_current, vec_ref)
         #Plane angles compensation
-        theta_x = np.arctan2(rotation_matrix[2,1], rotation_matrix[2,2])
-        theta_y = np.arctan2(-rotation_matrix[2,0], np.sqrt((rotation_matrix[2,1]) ** 2 + (rotation_matrix[2,2]) ** 2))
-        theta_z = np.arctan2(rotation_matrix[1,0], rotation_matrix[0,0])
+        theta_x = np.arctan2(rotation_matrix[2,1], rotation_matrix[2,2]) #radians
+        theta_y = np.arctan2(-rotation_matrix[2,0], np.sqrt((rotation_matrix[2,1]) ** 2 + (rotation_matrix[2,2]) ** 2)) #radians
+        theta_z = np.arctan2(rotation_matrix[1,0], rotation_matrix[0,0]) #radians
         
+        print("Roll and Pitch angles [rad]:", roll_angle_compensate, pitch_angle_compensate,'\n')
         print('Theta x, Theta y, Theta z [rad]: ', theta_x, theta_y, theta_z,'\n')
         
 
@@ -244,6 +275,12 @@ while True:
         theta_inc = last_angle - last_last_angle #radians
         b_inc = last_b - last_last_b #pixels
 
+        #Current Sky line Distance
+        d_current = distance(x_position, y_position) #pixels
+        #Sky line Distance Check
+        if d_current <= (1 / 3) * d_ref:
+            continue
+
         #Sky line roll angle compensation movement with respect to the reference image
         angle_current = angle_a #radians
         roll_angle_compensate = angle_current - reference_angle #radians
@@ -261,8 +298,6 @@ while True:
         b_total_angle = np.arctan(b_total / focal_length_pixel) #radians
         #Pitch angle compensation movement
         pitch_angle_compensate = np.arctan(b_total_angle - b_center_ref_angle) #radians
-        
-        print("Roll and Pitch angles [rad]:", roll_angle_compensate, pitch_angle_compensate,'\n')
             
         #Plane 3 Values
         # (p,q) = Current Center Straight Line Coordinates
@@ -271,7 +306,8 @@ while True:
         #Threshold values
         t_x = 200 #pixels
         t_y = 100 #pixels
-        altitude = 300 ##milimeters
+        altitude = 300 #milimeters
+        # m, n, l = Coordinates of three points in a current plane
         if p > t_x and q > t_y:
             m = np.array([p, q + 50, altitude * focal_length_pixel / focal_length_mm]) #pixels
             n = np.array([p + 100, q + 100, altitude * focal_length_pixel / focal_length_mm]) #pixels
@@ -280,16 +316,24 @@ while True:
             m = np.array([p + t_x, q + t_y + 50, altitude * focal_length_pixel / focal_length_mm]) #pixels
             n = np.array([p + t_x + 100, q + t_y + 100, altitude * focal_length_pixel / focal_length_mm]) #pixels
             l = np.array([p + t_x - 100, img_height, (altitude - 0.4) * focal_length_pixel / focal_length_mm]) #pixels
-        # m, n, l = Coordinates of three points in a current plane to estimate its center and its normal vector
-        center3,vec3 = estimate_plane(m, n, l)
+        
+        #Current Area
+        plane_coordinates = np.array(m, n, l) #pixels
+        area_current = plane_area(plane_coordinates) #pixels^2
+        #Plane Area Check
+        if area_current <= (1 / 3) * area_ref:
+            continue
+        #Estimate plane center and plane normal vector
+        center_current, vec_current = estimate_plane(m, n, l)
         
         #Rotation Matrix between the current plane and the reference plane
-        rotation_matrix = rotation_matrix_from_vectors(vec3, vec1)
+        rotation_matrix = rotation_matrix_from_vectors(vec_current, vec_ref)
         #Plane angles compensation
-        theta_x = np.arctan2(rotation_matrix[2,1], rotation_matrix[2,2])
-        theta_y = np.arctan2(-rotation_matrix[2,0], np.sqrt((rotation_matrix[2,1]) ** 2 + (rotation_matrix[2,2]) ** 2))
-        theta_z = np.arctan2(rotation_matrix[1,0], rotation_matrix[0,0])
+        theta_x = np.arctan2(rotation_matrix[2,1], rotation_matrix[2,2]) #radians
+        theta_y = np.arctan2(-rotation_matrix[2,0], np.sqrt((rotation_matrix[2,1]) ** 2 + (rotation_matrix[2,2]) ** 2)) #radians
+        theta_z = np.arctan2(rotation_matrix[1,0], rotation_matrix[0,0]) #radians
         
+        print("Roll and Pitch angles [rad]:", roll_angle_compensate, pitch_angle_compensate,'\n')
         print('Theta x, Theta y, Theta z [rad]: ', theta_x, theta_y, theta_z,'\n')
         
         
