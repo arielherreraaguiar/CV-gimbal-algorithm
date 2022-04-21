@@ -8,14 +8,11 @@ from matplotlib import pyplot as plt
 
 def fit(x, y): 
     """Curve Fitting Straight line. Returns the slope of the line a and the y-intercept b"""
-
     xbar = sum(x) / len(x)
     ybar = sum(y) / len(y)
     n = len(x) # or len(y)
-
     numer = sum([xi * yi for xi,yi in zip(x, y)]) - n * xbar * ybar
     denum = sum([xi ** 2 for xi in x]) - n * xbar ** 2
-
     a = numer / denum
     b = ybar - a * xbar
     return a, b
@@ -25,15 +22,10 @@ def boundary_removal(img):
     """Remove edges from the boundary of the image frame."""
     for i in range (1,13):
         img[:,-i] = img[:,-15]
-
-        
     for i in range (0,12):
         img[:,i] = img[:,15]
-
-
     for i in range (0,12):
         img[i,:] = img[15,:]
-    
     return img
 
 
