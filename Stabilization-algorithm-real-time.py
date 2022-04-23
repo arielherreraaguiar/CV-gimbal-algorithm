@@ -51,11 +51,12 @@ def estimate_plane(a, b, c):
 def plane_area(plane_coordinates):
     """Estimate the area of the plane given its coordinates (array)."""
     a = 0
-    ox,oy = plane_coordinates[0]
-    for x,y in plane_coordinates[1:]:
-        a += (x*oy-y*ox)
-        ox,oy = x,y
-    return a/2
+    ox, oy = plane_coordinates[0]
+    for x, y in plane_coordinates[1:]:
+        a += (x * oy - y * ox)
+        ox, oy = x, y
+        a_plane = a / 2
+    return a_plane
 
 
 def rotation_matrix_from_vectors(vec1, vec2):
@@ -90,14 +91,14 @@ image_counter = 0
 
 while True:
     #Run camera in real time
-    ret, frame = cam.read()
-    cv.imshow('Cam',frame)
+    ret, output = cam.read()
+    cv.imshow('Cam', output)
     if cv.waitKey(1) == ord('q'):
         break
 
     image_counter +=1
     if image_counter == 1:
-        img = frame
+        img = output
         img_height = img.shape[0] 
         img_width = img.shape[1] 
         #HFOV = Horizontal Field of View of the camera
@@ -160,7 +161,7 @@ while True:
 
         
     elif image_counter == 2:
-        img = frame
+        img = output
         img = boundary_removal(img)
         #(x_position, y_position) = Current sky line image coordinates
         x_position = []
@@ -207,7 +208,7 @@ while True:
         #Threshold values
         t_x = 200 #pixels
         t_y = 100 #pixels
-        altitude = 300 ##milimeters
+        altitude = 300 #milimeters
         # m, n, l = Coordinates of three points in a current plane
         if p > t_x and q > t_y:
             m = np.array([p, q + 50, altitude * focal_length_pixel / focal_length_mm]) #pixels
@@ -232,7 +233,7 @@ while True:
 
 
     elif image_counter > 2:
-        img = frame
+        img = output
         img = boundary_removal(img) 
         #Sky line motion prediction values
         theta_pred = theta_inc + last_angle #radians
