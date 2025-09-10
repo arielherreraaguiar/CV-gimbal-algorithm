@@ -2,7 +2,7 @@
 
 This repository contains two implementations of algorithms to detect and track the skyline and ground plane in outdoor environments. The goal is to stabilize images by compensating for roll and pitch motions using skyline segmentation and prediction.
 
-The methods are based on the Bachelor's Thesis: [Design and simulation of a computer vision-controlled camera stabilizer for a fixed-wing unmanned aerial vehicle.](https://bibdigital.epn.edu.ec/handle/15000/22453?locale=en).
+The methods are based on the Bachelor's Thesis: [Design and simulation of a computer vision-controlled camera stabilizer for a fixed-wing unmanned aerial vehicle](https://bibdigital.epn.edu.ec/handle/15000/22453?locale=en).
 
 ---
 
