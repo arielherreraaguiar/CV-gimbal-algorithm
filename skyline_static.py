@@ -5,6 +5,8 @@ import time
 from matplotlib import pyplot as plt
 import glob
 
+# This algorithm processes static images to detect the skyline and apply motion compensation.
+
 def fit(x, y): #Curve Fitting Straight line
 
     xbar = sum(x)/len(x)
