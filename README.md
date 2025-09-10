@@ -30,7 +30,6 @@ File: `skyline_static.py`
 This script processes a batch of static images. It estimates motion between consecutive frames and compensates roll and pitch movements by rotating and translating the image. It also includes motion prediction to anticipate skyline movement.
 
 ![](images/compensated_vs_reference.png)
-![](images/motion_prediction.png)
 
 ---
 
